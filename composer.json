@@ -1,0 +1,17 @@
+{
+    "name": "aldrin/emapta-test",
+    "description": "To easily compute commision fees.",
+    "authors": [
+        {
+            "name": "Aldrin Papa",
+            "email": "papaaldrin@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    }
+}
