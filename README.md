@@ -7,11 +7,16 @@ A simple calculator that computes commission.
 ``` sh
 git clone https://github.com/papanipapi/tech-exam.git
 cd tech-exam
-composer install
+composer install --no-dev
 ```
 
 ## Usage
-`php script.php <csv_file>`
+``` sh
+php script.php <csv_file>
+```
 
 ## Tests
-`composer run-script test`
+``` sh
+composer install --dev
+composer run-script test
+```
