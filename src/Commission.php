@@ -6,7 +6,7 @@ use App\User;
 use App\Config;
 use App\Operation;
 
-class CommissionCalculator
+class Commission
 {
     protected $user;
     protected $operation;

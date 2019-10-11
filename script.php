@@ -7,7 +7,7 @@ use App\Config;
 use App\Format;
 use App\Operation;
 use App\ArrayUtil;
-use App\CommissionCalculator;
+use App\Commission;
 
 try {
     
@@ -41,7 +41,7 @@ try {
         $user->setId($userId);
         $user->setType($userType);
 
-        $calculator = new CommissionCalculator($user, $operation, $config);
+        $calculator = new Commission($user, $operation, $config);
         $calculator->calculate();
 
         fwrite(STDOUT, Format::currencyFormat($calculator->getFee()) . PHP_EOL);

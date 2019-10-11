@@ -6,10 +6,10 @@ use App\User;
 use App\Config;
 use App\Format;
 use App\Operation;
-use App\CommissionCalculator;
+use App\Commission;
 use PHPUnit\Framework\TestCase;
 
-class CommissionCalculatorTest extends TestCase
+class CommissionTest extends TestCase
 {
     protected $config;
 
@@ -34,7 +34,7 @@ class CommissionCalculatorTest extends TestCase
         $user->setId($userId);
         $user->setType($userType);
 
-        $calculator = new CommissionCalculator($user, $operation, $this->config);
+        $calculator = new Commission($user, $operation, $this->config);
         $calculator->calculate();
 
         $this->assertObjectHasAttribute('date', $operation);
@@ -69,7 +69,7 @@ class CommissionCalculatorTest extends TestCase
         $user->setId($userId);
         $user->setType($userType);
 
-        $calculator = new CommissionCalculator($user, $operation, $this->config);
+        $calculator = new Commission($user, $operation, $this->config);
         $calculator->calculate();
     }
 
@@ -89,7 +89,7 @@ class CommissionCalculatorTest extends TestCase
         $user->setId($userId);
         $user->setType($userType);
 
-        $calculator = new CommissionCalculator($user, $operation, $this->config);
+        $calculator = new Commission($user, $operation, $this->config);
         $calculator->calculate();
 
         $this->assertEquals(Format::currencyFormat($calculator->getFee()), '0.28');
