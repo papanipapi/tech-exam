@@ -2,127 +2,226 @@
 
 namespace App;
 
-use App\User;
-use App\Config;
-use App\Operation;
+use App\Entity\User;
+use App\Entity\Operation;
+use App\Resources\Config;
+use App\Exception\CommissionException;
 
 class Commission
 {
     protected $user;
     protected $operation;
-    protected $settings;
+    protected $config;
 
     protected $fee;
-    protected $commissionFee;
-    protected $commissionFeeMinAmount;
-    protected $commissionFeeMinCurrency;
-    protected $commissionFeeMaxAmount;
-    protected $commissionFeeMaxCurrency;
+    protected $feeMinAmount;
+    protected $feeMinCurrency;
+    protected $feeMaxAmount;
+    protected $feeMaxCurrency;
 
+    protected $amount;
+    protected $formattedAmount;
+    
     public function __construct(User $user, Operation $operation, Config $config)
     {
         $this->user = $user;
         $this->operation = $operation;
-        $this->settings = $config;
+        $this->config = $config;
+    }
+
+    public function getUser()
+    {
+        return $this->user;
+    }
+
+    public function setUser($user)
+    {
+        $this->user = $user;
+    }
+
+    public function getOperation()
+    {
+        return $this->operation;
+    }
+
+    public function setOperation($operation)
+    {
+        $this->operation = $operation;
+    }
+
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
+    public function setConfig($config)
+    {
+        $this->config = $config;
+    }
+
+    public function getFee()
+    {
+        return $this->fee;
+    }
+
+    public function setFee($fee)
+    {
+        $this->fee = $fee;
+    }
+
+    public function getAmount()
+    {
+        return $this->amount;
+    }
+
+    public function setAmount($amount)
+    {
+        $this->amount = $amount;
+    }
+
+    public function getMinAmount()
+    {
+        return $this->feeMinAmount;
+    }
+
+    public function getMinCurrency()
+    {
+        return $this->feeMinCurrency;
+    }
+
+    public function getMaxAmount()
+    {
+        return $this->feeMaxAmount;
+    }
+
+    public function getMaxCurrency()
+    {
+        return $this->feeMaxCurrency;
+    }
+
+    public function setMinFee($amount, $currency)
+    {
+        $this->feeMinAmount = $amount;
+        $this->feeMinCurrency = $currency;
+    }
+
+    public function setMaxFee($amount, $currency)
+    {
+        $this->feeMaxAmount = $amount;
+        $this->feeMaxCurrency = $currency;
+    }
+
+    public function getFormattedAmount()
+    {
+        return $this->formattedAmount;
+    }
+
+    public function setFormattedAmount()
+    {
+        $ceilAmount = $this->roundUp($this->getAmount(), $this->getConfig()->ROUND_UP_DECIMAL);
+        $this->formattedAmount = number_format($ceilAmount, $this->getConfig()->ROUND_UP_DECIMAL);
     }
 
     public function calculate()
     {
         if (!$this->isSupportedCurrency()) {
-            throw new \Exception('Unsupported currency.');
+            throw new CommissionException('Unsupported currency.');
         }
 
-        $this->calculateCashIn();
-        $this->calculateCashOut();
+        $this->setCommissionFee();
+        $this->calculateAmount();
+        $this->setConditionalAmount();
+        $this->setFormattedAmount();
+    }
 
-        $this->calculateFee();
+    public function setCommissionFee()
+    {
+        $this->setCashInFee();
+        $this->setCashOutFee();
+    }
 
+    public function setConditionalAmount()
+    {
         $this->calculateMinAmount();
         $this->calculateMaxAmount();
     }
 
-    private function calculateCashIn()
+    public function setCashInFee()
     {
-        if (!$this->operation->isCashIn()) {
+        if (!$this->getOperation()->isCashIn()) {
             return;
         }
 
-        $this->commissionFee = $this->settings->config['CASH_IN_COMMISSION_FEE'];
-        $this->commissionFeeMaxAmount = $this->settings->config['CASH_IN_MAX_COMMISSION_AMOUNT'];
-        $this->commissionFeeMaxCurrency = $this->settings->config['CASH_IN_MAX_COMMISSION_CURRENCY'];
+        $this->setFee($this->getConfig()->CASH_IN_COMMISSION_FEE);
+        $this->setMaxFee($this->getConfig()->CASH_IN_MAX_COMMISSION_AMOUNT
+            , $this->getConfig()->CASH_IN_MAX_COMMISSION_CURRENCY);
     }
 
-    private function calculateCashOut()
+    public function setCashOutFee()
     {
-        if (!$this->operation->isCashOut()) {
+        if (!$this->getOperation()->isCashOut()) {
             return;
         }
 
-        $this->commissionFee = $this->settings->config['CASH_OUT_COMMISSION_FEE'];
+        $this->setFee($this->getConfig()->CASH_OUT_COMMISSION_FEE);
 
-        $this->calculateCashOutNatural();
-        $this->calculateCashOutLegal();
+        $this->setCashOutLegalFee();
     }
 
-    private function calculateCashOutNatural()
+    public function setCashOutLegalFee()
     {
-        if (!$this->user->isNatural()) {
-            return;
-        }
-    }
-
-    private function calculateCashOutLegal()
-    {
-        if (!$this->user->isLegal()) {
+        if (!$this->getUser()->isLegal()) {
             return;
         }
 
-        $this->commissionFeeMinAmount = $this->settings->config['CASH_OUT_LEGAL_MIN_COMMISSION_AMOUNT'];
-        $this->commissionFeeMinCurrency = $this->settings->config['CASH_OUT_LEGAL_MIN_COMMISSION_CURRENCY'];
+        $this->setMinFee($this->getConfig()->CASH_OUT_LEGAL_MIN_COMMISSION_AMOUNT
+            , $this->getConfig()->CASH_OUT_LEGAL_MIN_COMMISSION_CURRENCY);
     }
 
-    private function calculateFee()
+    public function calculateAmount()
     {
-        $this->fee = $this->operation->getAmount() * ($this->commissionFee / 100);
+        $amount = $this->getOperation()->getAmount() * ($this->getFee() / 100);
+        $this->setAmount($amount);
     }
 
-    private function calculateMinAmount()
+    public function calculateMinAmount()
     {
-        if (empty($this->commissionFeeMinAmount)) {
+        if (empty($this->getMinAmount())) {
             return true;
         }
 
-        if ($this->commissionFeeMinAmount < $this->fee) {
+        if ($this->getMinAmount() < $this->getAmount()) {
             return true;
         }
 
-        $this->fee = $this->commissionFeeMinAmount;
+        $this->setAmount($this->getMinAmount());
     }
 
-    private function calculateMaxAmount()
+    public function calculateMaxAmount()
     {
-        if (empty($this->commissionFeeMaxAmount)) {
+        if (empty($this->getMaxAmount())) {
             return true;
         }
 
-        if ($this->commissionFeeMaxAmount > $this->fee) {
+        if ($this->getMaxAmount() > $this->getAmount()) {
             return true;
         }
 
-        $this->fee = $this->commissionFeeMaxAmount;
+        $this->setAmount($this->getMaxAmount());
     }
 
-    private function isSupportedCurrency()
+    public function isSupportedCurrency()
     {
-        if (in_array($this->operation->getCurrency(), $this->settings->config['SUPPORTED_CURRENCY'])) {
+        if (in_array($this->getOperation()->getCurrency(), $this->getConfig()->SUPPORTED_CURRENCY)) {
             return true;
         }
 
         return false;
     }
 
-    public function getFee()
+    public function roundUp($value, $places)
     {
-        return $this->fee;
+        $mult = pow(10, $places);
+        return ceil($value * $mult) / $mult;
     }
 }

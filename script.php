@@ -2,12 +2,12 @@
 
 require __DIR__ . '/vendor/autoload.php';
 
-use App\User;
-use App\Config;
-use App\Format;
-use App\Operation;
-use App\ArrayUtil;
 use App\Commission;
+use App\Entity\User;
+use App\Entity\Operation;
+use App\Helper\ArrayUtil;
+use App\Resources\Config;
+use App\Exception\CommissionException;
 
 try {
     
@@ -23,7 +23,7 @@ try {
 
     $csv = array_map('str_getcsv', file($filename));
 
-    usort($csv, ["App\ArrayUtil", "sortByFirstColumn"]);
+    usort($csv, ["App\Helper\ArrayUtil", "sortByFirstColumn"]);
 
     $config = new Config('./config.ini');
 
@@ -41,12 +41,14 @@ try {
         $user->setId($userId);
         $user->setType($userType);
 
-        $calculator = new Commission($user, $operation, $config);
-        $calculator->calculate();
+        $commission = new Commission($user, $operation, $config);
+        $commission->calculate();
 
-        fwrite(STDOUT, Format::currencyFormat($calculator->getFee()) . PHP_EOL);
+        fwrite(STDOUT, $commission->getFormattedAmount() . PHP_EOL);
     }
 
+} catch (CommissionException $e) {
+    echo $e->getMessage();
 } catch (\Exception $e) {
     echo $e->getMessage();
 }

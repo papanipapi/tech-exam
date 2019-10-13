@@ -2,7 +2,8 @@
 
 namespace App\Tests;
 
-use App\Config;
+use App\Resources\Config;
+use App\Exception\CommissionException;
 use PHPUnit\Framework\TestCase;
 
 class ConfigTest extends TestCase
@@ -16,7 +17,7 @@ class ConfigTest extends TestCase
 
     public function testFailure()
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(CommissionException::class);
         $this->expectExceptionMessage('File not found.');
 
         $this->config = new Config('./config.dev.ini');

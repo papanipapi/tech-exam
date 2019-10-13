@@ -2,11 +2,11 @@
 
 namespace App\Tests;
 
-use App\User;
-use App\Config;
-use App\Format;
-use App\Operation;
 use App\Commission;
+use App\Entity\User;
+use App\Entity\Operation;
+use App\Resources\Config;
+use App\Exception\CommissionException;
 use PHPUnit\Framework\TestCase;
 
 class CommissionTest extends TestCase
@@ -47,12 +47,12 @@ class CommissionTest extends TestCase
 
         $this->assertTrue($operation->isCashOut());
         $this->assertTrue($user->isNatural());
-        $this->assertEquals(Format::currencyFormat($calculator->getFee()), '0.90');
+        $this->assertEquals($calculator->getFormattedAmount($calculator->getFormattedAmount()), '0.90');
     }
 
     public function testUnsupportedCurrency()
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(CommissionException::class);
         $this->expectExceptionMessage('Unsupported currency.');
 
         $content = '2016-02-15,1,natural,cash_out,300.00,PHP';
@@ -92,6 +92,6 @@ class CommissionTest extends TestCase
         $calculator = new Commission($user, $operation, $this->config);
         $calculator->calculate();
 
-        $this->assertEquals(Format::currencyFormat($calculator->getFee()), '0.28');
+        $this->assertEquals($calculator->getFormattedAmount($calculator->getFormattedAmount()), '0.28');
     }
 }
